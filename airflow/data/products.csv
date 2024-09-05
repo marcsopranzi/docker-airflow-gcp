@@ -1,0 +1,4 @@
+product_id,name,category,price,created_at,updated_at
+1,Laptop,Electronics,999.99,2023-10-01 10:00:00,2023-10-01 10:00:00
+2,Smartphone,Electronics,499.99,2023-10-02 11:00:00,2023-10-01 10:00:00
+3,Desk Chair,Furniture,149.99,2023-10-03 12:00:00,2023-10-01 10:00:00

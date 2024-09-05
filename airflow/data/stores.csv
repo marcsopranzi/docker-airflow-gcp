@@ -1,0 +1,4 @@
+store_id,name,location,created_at,updated_at
+1,Store A,Downtown,2023-10-01 10:00:00,2023-10-01 10:00:00
+2,Store B,Uptown,2023-10-02 11:00:00,2023-10-01 10:00:00
+3,Store D,centre,2023-10-03 12:00:00,2023-10-01 10:00:00
