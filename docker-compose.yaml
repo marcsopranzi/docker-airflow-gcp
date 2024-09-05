@@ -1,0 +1,201 @@
+services:
+  source_postgres:
+    image: postgres:16
+    ports:
+      - "5434:5432"
+    networks:
+      - elt_network
+    environment:
+      POSTGRES_DB: source_db
+      POSTGRES_USER: ${SOURCE_DB_USER}
+      POSTGRES_PASSWORD: ${SOURCE_DB_PASSWORD}
+    volumes:
+      - ./ddl/ddl_source/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - ./.env
+
+  destination_postgres:
+    image: postgres:16
+    ports:
+      - "5435:5432"
+    networks:
+      - elt_network
+    environment:
+      POSTGRES_DB: destination_db
+      POSTGRES_USER: ${DESTINATION_DB_USER}
+      POSTGRES_PASSWORD: ${DESTINATION_DB_PASSWORD}
+    volumes:
+      - ./ddl/ddl_destination/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - ./.env
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - elt_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - elt_network
+
+  postgres:
+    image: postgres:16
+    networks:
+      - elt_network
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=${AIRFLOW_PASSWORD}
+      - POSTGRES_DB=airflow
+    env_file:
+      - ./.env
+
+  init-airflow:
+    image: apache/airflow:2.9.3
+    depends_on:
+      - postgres
+    networks:
+      - elt_network
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__WEBSERVER__RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+    command: >
+      bash -c "airflow db init &&
+               airflow users create --username airflow --password airflow --firstname John --lastname Doe --role Admin --email admin@example.com"
+    volumes:
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+    env_file:
+      - ./.env
+
+  webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: root
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - elt_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./airflow:/opt/airflow
+      - ./data:/opt/airflow/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/keys/gcp-key.json
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_DESTINATION_POSTGRES=postgres://postgres:secret@destination_postgres:5435/destination_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_CORE_FERNET_KEY}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+      - AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=secret
+      - AIRFLOW__WEBSERVER__RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+      - PYTHONPATH=/opt/airflow/plugins
+      - AIRFLOW__CELERY__BROKER_URL=pyamqp://guest@rabbitmq//
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT=google-cloud-platform://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - AIRFLOW_CONN_BIGQUERY_DEFAULT=bigquery://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/keys/gcp-key.json
+    env_file:
+      - ./.env
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: root
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - elt_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./airflow:/opt/airflow
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/keys/gcp-key.json
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_DESTINATION_POSTGRES=postgres://postgres:secret@destination_postgres:5435/destination_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_CORE_FERNET_KEY}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=secret
+      - AIRFLOW__WEBSERVER__RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+      - PYTHONPATH=/opt/airflow/plugins
+      - AIRFLOW__CELERY__BROKER_URL=pyamqp://guest@rabbitmq//
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT=google-cloud-platform://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - AIRFLOW_CONN_BIGQUERY_DEFAULT=bigquery://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/keys/gcp-key.json
+    env_file:
+      - ./.env
+    command: scheduler
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: root
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+    networks:
+      - elt_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./airflow:/opt/airflow
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/airflow.cfg:/opt/airflow/airflow.cfg
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/keys/gcp-key.json
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_DESTINATION_POSTGRES=postgres://postgres:secret@destination_postgres:5435/destination_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_CORE_FERNET_KEY}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW__WEBSERVER__DEFAULT_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_USER}
+      - AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_PASSWORD}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=secret
+      - AIRFLOW__WEBSERVER__RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+      - PYTHONPATH=/opt/airflow/plugins
+      - AIRFLOW__CELERY__BROKER_URL=pyamqp://guest@rabbitmq//
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT=google-cloud-platform://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - AIRFLOW_CONN_BIGQUERY_DEFAULT=bigquery://?extra__google_cloud_platform__key_path=/opt/airflow/keys/gcp-key.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/keys/gcp-key.json
+    env_file:
+      - ./.env
+    command: celery worker
+
+networks:
+  elt_network:
+    driver: bridge

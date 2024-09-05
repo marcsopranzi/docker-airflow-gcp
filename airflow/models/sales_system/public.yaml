@@ -1,0 +1,42 @@
+tables:
+  - customers:
+      type: dimension
+      schema_fields: [
+        {'name': 'customer_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'address', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'created_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        {'name': 'updated_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        ]
+  - products:
+      type: dimension
+      schema_fields: [
+        {'name': 'product_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'category', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'price', 'type': 'FLOAT64', 'mode': 'NULLABLE'},
+        {'name': 'created_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        {'name': 'updated_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        ]
+  - stores:
+      type: dimension
+      schema_fields: [
+        {'name': 'store_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'location', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'created_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        {'name': 'updated_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        ]
+  - sales:
+      type: fact
+      schema_fields: [
+        {'name': 'sale_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'customer_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'product_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'store_id', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'sale_date', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        {'name': 'quantity', 'type': 'INTEGER', 'mode': 'NULLABLE'},
+        {'name': 'total_amount', 'type': 'FLOAT', 'mode': 'NULLABLE'},
+        {'name': 'created_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        {'name': 'updated_at', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
+        ]

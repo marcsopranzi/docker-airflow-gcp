@@ -1,0 +1,4 @@
+customer_id,name,address,created_at,updated_at
+1,John Doe,123 Elm St,2023-10-01 10:00:00,2023-10-01 10:00:00
+2,Jane Smith,456 Oak St,2023-10-02 11:00:00,2023-10-01 10:00:00
+3,Alice Johnson,789 Pine St,2023-10-03 12:00:00,2023-10-01 10:00:00
