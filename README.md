@@ -57,6 +57,9 @@ This `bigquery_gcs_dag` ETL was build into one single DAG using mainly the opera
 * BigQueryCreateEmptyDatasetOperator
 The process will start loading CSVs file into GCS and make those file available in an external table in Bigquery. Once the data is available in Bigquery first we tackle the Dimension process and later one the Fact Tables. To track the lineage between the CSV folder and the data ingestion we be linked with the `dwh_load_date`.
 
+![Screenshot from 2024-09-05 23-04-16](https://github.com/user-attachments/assets/131564b0-929c-41b6-a93c-3f5285bc68fd)
+
+
 ## Testing
 Unit testing is executed through Github Actions.
 
