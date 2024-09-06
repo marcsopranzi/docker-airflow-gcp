@@ -103,8 +103,15 @@ def get_metadata() -> List[Tuple[str, List[str], str, List[Dict[str, Any]]]]:
     return result
 
 
-def read_sql_file(file_path, **kwargs):
-    """Utility function to read SQL file content and replace variables."""
+def read_sql_file(file_path: str, **kwargs: str) -> str:
+    """
+    Utility function to read SQL file content and replace variables.
+
+    Args:
+        file_path (str): path to the SQL file.
+        kwargs (str): list of variables to replace in the SQL content.
+
+    """
     with open(file_path, "r") as file:
         sql_content = file.read()
 
