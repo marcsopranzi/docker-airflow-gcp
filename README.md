@@ -18,6 +18,7 @@ In GCP you need to have access to GCS, Bigquery and Service Account. First thing
 * Storage Object User
 
 Once you have your permissions set up you can download the file and export the path into an .env file such as:
+
 `
 echo -e "
 SOURCE_DB_USER=<secret>
