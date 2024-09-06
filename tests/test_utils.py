@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import mock_open, patch, MagicMock
-from typing import Optional, Iterable, Tuple
 import os
 
 from airflow.plugins.util.utils import (
